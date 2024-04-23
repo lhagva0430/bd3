@@ -1,12 +1,12 @@
 package bd3;
 import java.io.*;
 import java.util.*;
-public class Employee1{
+public class Employee2{
 	private String name;
 	private String id;
 	private String work;
 	private String date;
-	public Employee1(String name, String id, String work, String date) {
+	public Employee2(String name, String id, String work, String date) {
 		this.name = name;
 		this.id = id;
 		this.work = work;
@@ -41,22 +41,30 @@ public class Employee1{
 			List<Employee1> employees = parseEmployeeData(filePath); 
 			
 			Collections.sort(employees, Comparator.comparing(Employee1::getName));
-			//tailbar
-			List<Employee1> transferredEmployees = parseEmployeeData(darhanFilePath);
+			
 			Iterator<Employee1> iterator = employees.iterator();
-			//tailbar
+			
 			while(iterator.hasNext()) {
 				Employee1 employee1 = iterator.next();
-				
-				int yearsOfWork = calculateYearsOfWork(employee1.getDate());
-				if(yearsOfWork > 1) {
+
 					writeEmployeeToDarhanFile(employee1, darhanFilePath);
 					
 					iterator.remove();
-				}
 				
 			}
 			updateUBworkersFile(filePath, employees);
+			List<Employee1> transferredEmployees = parseEmployeeData(darhanFilePath);
+			Collections.sort(transferredEmployees, Comparator.comparing(Employee1::getName));
+			Iterator<Employee1> daiterator = transferredEmployees.iterator();
+			while(daiterator.hasNext()) {
+				Employee1 employee1 = daiterator.next();
+				int yearsOfWork = calculateYearsOfWork(employee1.getDate());
+				if(yearsOfWork > 1) {
+					writeEmployeeToDarhanFile(employee1, filePath);
+					daiterator.remove();
+				}
+			}
+			updateUBworkersFile(darhanFilePath,transferredEmployees );
 			
 			System.out.println("Улаанбаатар серверт байгаа ажилчид: ");
 			for(Employee1 employee1 : employees) {
