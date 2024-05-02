@@ -1,50 +1,84 @@
 package bd3;
-import java.io.*;
-import java.util.*;
-public class Employee1{
-	private String name;
-	private String id;
-	private String work;
-	private String date;
-	public Employee1(String name, String id, String work, String date) {
-		this.name = name;
-		this.id = id;
-		this.work = work;
-		this.date = date;
-	}
-	public String getName() {
-		return name;
-	}
-	public String getId() {
-		return id;
-	}
-	public String getWork() {
-		return work;
-		
-	}
-	public String getDate() {
-		return date;
-	}
-	@Override
-	public String toString() {
-		return "Employee{" +
-                "Нэр='" + name + '\'' +
-                ", Код='" + id + '\'' +
-                ", Мэргэжил='" + work + '\'' +
-                ", Ажилд орсон өдөр='" + date + '\'' +
-                '}';
-	}
-	public class EmployeeTransfer{
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Scanner;
+
+public class EmployeeTransfer{
 		public static void main(String[] args) {
+			System.out.println("Вариантын дугаар:");
+			Scanner sc=new Scanner(System.in);
+			int a=sc.nextInt();
+			while(a!=1&&a!=2) {
+				a=sc.nextInt();
+			}
+			switch (a) {
+			case 1:
+				variant1();
+				break;
+			case 2:
+				variant2();
+				break;
+			}
+		}
+		
+		public static void variant2() {
+			/*Улаанбаатарын ажилчдын мэдээллийг дарханы файлд хадгалж
+			 *  ангалан Улаанбаатарын файлд хадгална
+			*/
 			String filePath = "C:\\Users\\Dell\\Desktop\\hun ba com\\UBworkers.txt";
 			String darhanFilePath = "C:\\Users\\Dell\\Desktop\\hun ba com\\DarhanWorkers.txt";
 			List<Employee1> employees = parseEmployeeData(filePath); 
 			
 			Collections.sort(employees, Comparator.comparing(Employee1::getName));
 			
-			List<Employee1> transferredEmployees = parseEmployeeData(darhanFilePath);
 			Iterator<Employee1> iterator = employees.iterator();
 			
+			while(iterator.hasNext()) {
+				Employee1 employee1 = iterator.next();
+
+					writeEmployeeToDarhanFile(employee1, darhanFilePath);
+					
+					iterator.remove();
+				
+			}
+			updateUBworkersFile(filePath, employees);
+			List<Employee1> transferredEmployees = parseEmployeeData(darhanFilePath);
+			Collections.sort(transferredEmployees, Comparator.comparing(Employee1::getName));
+			Iterator<Employee1> daiterator = transferredEmployees.iterator();
+			while(daiterator.hasNext()) {
+				Employee1 employee1 = daiterator.next();
+				int yearsOfWork = calculateYearsOfWork(employee1.getDate());
+				if(yearsOfWork > 1) {
+					writeEmployeeToDarhanFile(employee1, filePath);
+					daiterator.remove();
+				}
+			}
+			updateUBworkersFile(darhanFilePath,transferredEmployees );
+			
+			System.out.println("амжилттай");
+			
+		}
+		public static void variant1() {
+			/*Улаанбаатарын файлаас ангилсан ажилчдын мэдээллийг
+			 *  дарханы файлд хадгалах
+			 */
+			String filePath = "C:\\Users\\Dell\\Desktop\\hun ba com\\UBworkers1.txt";
+			String darhanFilePath = "C:\\Users\\Dell\\Desktop\\hun ba com\\DarhanWorkers1.txt";
+			List<Employee1> employees = parseEmployeeData(filePath); 
+			
+			Collections.sort(employees, Comparator.comparing(Employee1::getName));
+			//tailbar
+			List<Employee1> transferredEmployees = parseEmployeeData(darhanFilePath);
+			Iterator<Employee1> iterator = employees.iterator();
+			//tailbar
 			while(iterator.hasNext()) {
 				Employee1 employee1 = iterator.next();
 				
@@ -57,16 +91,9 @@ public class Employee1{
 				
 			}
 			updateUBworkersFile(filePath, employees);
+			System.out.println("амжилттай");
 			
-			System.out.println("Улаанбаатар серверт байгаа ажилчид: ");
-			for(Employee1 employee1 : employees) {
-				System.out.println(employee1);	
-			}
-			System.out.println("\nДархан серверт байгаа ажилчид: ");
-			for (Employee1 employee1 : transferredEmployees) {
-	            System.out.println(employee1);
-	        }
-			}
+		}
 		
 		
 	
@@ -96,7 +123,6 @@ public class Employee1{
 			return currentYear - startYear;
 		}
 		public static void writeEmployeeToDarhanFile(Employee1 employee1, String darhanFilePath) {
-			// TODO Auto-generated method stub
 			try(FileWriter writer = new FileWriter(darhanFilePath, true)){
 				writer.write(employee1.getName() + "/" + employee1.getId() + "/" + employee1.getWork() + "/" + employee1.getDate() + "\n");
 			}
@@ -117,5 +143,4 @@ public class Employee1{
 		}
 		
 	
-}
 }
