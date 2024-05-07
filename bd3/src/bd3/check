@@ -1,146 +1,167 @@
-package bd2;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 
-public class EmployeeTransfer{
-		public static void main(String[] args) {
-			System.out.println("Вариантын дугаар:");
-			Scanner sc=new Scanner(System.in);
-			int a=sc.nextInt();
-			while(a!=1&&a!=2) {
-				a=sc.nextInt();
-			}
-			switch (a) {
-			case 1:
-				variant1();
-				break;
-			case 2:
-				variant2();
-				break;
-			}
-		}
-		
-		public static void variant2() {
-			/*Улаанбаатарын ажилчдын мэдээллийг дарханы файлд хадгалж
-			 *  ангалан Улаанбаатарын файлд хадгална
-			*/
-			String filePath = "C:\\Users\\lenovo\\Downloads\\ugugdliin butets\\UB.txt";
-			String darhanFilePath = "C:\\Users\\lenovo\\Downloads\\ugugdliin butets\\Darkhan.txt";
-			List<Employee1> employees = parseEmployeeData(filePath); 
-			
-			Collections.sort(employees, Comparator.comparing(Employee1::getName));
-			
-			Iterator<Employee1> iterator = employees.iterator();
-			
-			while(iterator.hasNext()) {
-				Employee1 employee1 = iterator.next();
+public class WorkerTransferManager {
+    public static void main(String[] args) {
+        System.out.println("variant: ");
+        Scanner sc=new Scanner("System.in");
+        int a=sc.nextInt();
+        switch(a) {
+        case 1:
+        	variant1();
+        	break;
+        case 2:
+        	variant2();
+        	break;
+        }
+    }
+    public static void variant1() {
+    	// Database connection parameters
+        String connectionUrl = "jdbc:sqlserver://localhost:1433;databaseName=qwer;trustServerCertificate=true";
+        String username = "sa1";
+        String password = "lhagva";
 
-					writeEmployeeToDarhanFile(employee1, darhanFilePath);
-					
-					iterator.remove();
-				
-			}
-			updateUBworkersFile(filePath, employees);
-			List<Employee1> transferredEmployees = parseEmployeeData(darhanFilePath);
-			Collections.sort(transferredEmployees, Comparator.comparing(Employee1::getName));
-			Iterator<Employee1> daiterator = transferredEmployees.iterator();
-			while(daiterator.hasNext()) {
-				Employee1 employee1 = daiterator.next();
-				int yearsOfWork = calculateYearsOfWork(employee1.getDate());
-				if(yearsOfWork > 1) {
-					writeEmployeeToDarhanFile(employee1, filePath);
-					daiterator.remove();
-				}
-			}
-			updateUBworkersFile(darhanFilePath,transferredEmployees );
-			
-			System.out.println("амжилттай");
-			
-		}
-		public static void variant1() {
-			/*Улаанбаатарын файлаас ангилсан ажилчдын мэдээллийг
-			 *  дарханы файлд хадгалах
-			 */
-			String filePath = "C:\\Users\\lenovo\\Downloads\\ugugdliin butets\\UB.txt";
-			String darhanFilePath = "C:\\Users\\lenovo\\Downloads\\ugugdliin butets\\Darkhan.txt";
-			List<Employee1> employees = parseEmployeeData(filePath); 
-			
-			Collections.sort(employees, Comparator.comparing(Employee1::getName));
-			//tailbar
-			List<Employee1> transferredEmployees = parseEmployeeData(darhanFilePath);
-			Iterator<Employee1> iterator = employees.iterator();
-			//tailbar
-			while(iterator.hasNext()) {
-				Employee1 employee1 = iterator.next();
-				
-				int yearsOfWork = calculateYearsOfWork(employee1.getDate());
-				if(yearsOfWork > 1) {
-					writeEmployeeToDarhanFile(employee1, darhanFilePath);
-					
-					iterator.remove();
-				}
-				
-			}
-			updateUBworkersFile(filePath, employees);
-			System.out.println("амжилттай");
-			
-		}
-		
-		
-	
-		private static List<Employee1> parseEmployeeData(String filePath) {
-			List<Employee1> employees = new ArrayList<>();
-			try (BufferedReader	br = new BufferedReader(new FileReader(filePath))){
-				String line;
-				while((line = br.readLine()) != null) {
-					String[] parts = line.split("/");
-					if(parts.length >= 4 ) {
-						employees.add(new Employee1(parts[0], parts[1], parts[2], parts[3]));
-					}
-					else {
-						System.err.println("Skipping line: " + line + " - Insufficient data");
-					}
-				}
-				
-			}
-			catch(IOException e) {
-				e.printStackTrace();
-			}
-			return employees;
-		}
-		public static int calculateYearsOfWork(String startDate) {
-			int startYear = Integer.parseInt(startDate.substring(0, 4));
-			int currentYear = Calendar.getInstance().get(Calendar.YEAR);
-			return currentYear - startYear;
-		}
-		public static void writeEmployeeToDarhanFile(Employee1 employee1, String darhanFilePath) {
-			try(FileWriter writer = new FileWriter(darhanFilePath, true)){
-				writer.write(employee1.getName() + "/" + employee1.getId() + "/" + employee1.getWork() + "/" + employee1.getDate() + "\n");
-			}
-			catch(IOException e) {
-				e.printStackTrace();
-			}
-		}
-		
-		public static void updateUBworkersFile(String filePath, List<Employee1> employees) {
-			// TODO Auto-generated method stub
-			try (FileWriter writer = new FileWriter(filePath)) {
-	            for (Employee1 employee1 : employees) {
-	                writer.write(employee1.getName() + "/" + employee1.getId() + "/" + employee1.getWork() + "/" + employee1.getDate() + "\n");
-	            }
-	        } catch (IOException e) {
-	            e.printStackTrace();
-	        }
-		}
-		
-	
+        try (Connection con = DriverManager.getConnection(connectionUrl, username, password)) {
+            System.out.println("Connected successfully!");
+
+            // Fetch workers from UBworkers table
+            List<Worker> workersToMove = fetchWorkers(con, "UBworkers");
+
+            // Process workers to move
+            List<Worker> workersToRemove = new ArrayList<>();
+            for (Worker worker : workersToMove) {
+                moveWorker(worker, con);  // Move worker to DarhanWorkers
+                workersToRemove.add(worker);
+            }
+
+            // Remove moved workers from UBworkers table
+            if (!workersToRemove.isEmpty()) {
+                removeWorkers(con, "UBworkers", workersToRemove);
+            }
+
+            // Fetch workers from DAworkers table
+            List<Worker> workersToMoveBack = fetchWorkers(con, "DAworkers");
+
+            // Process workers to move back to UBworkers
+            List<Worker> workersToAddBack = new ArrayList<>();
+            for (Worker worker : workersToMoveBack) {
+                int yearsOfWork = calculateYearsOfWork(worker.getDate());
+                if (yearsOfWork > 2) {
+                    moveWorker(worker, con);  // Move worker back to UBworkers
+                    workersToAddBack.add(worker);
+                }
+            }
+
+            // Remove moved workers from DAworkers table
+            if (!workersToAddBack.isEmpty()) {
+                removeWorkers(con, "DAworkers", workersToAddBack);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Connection failed!");
+            e.printStackTrace();
+        }
+    }
+    public static void variant2() {
+    	String connectionUrl = "jdbc:sqlserver://localhost:1433;databaseName=qwer;trustServerCertificate=true";
+        String username = "sa1";
+        String password = "lhagva";
+
+        try (Connection con = DriverManager.getConnection(connectionUrl, username, password)) {
+            System.out.println("Connected successfully!");
+            String query = "SELECT * FROM UBworkers";
+            PreparedStatement statement = con.prepareStatement(query);
+            ResultSet resultSet = statement.executeQuery();
+
+            List<Worker> employeesToMove = new ArrayList<>();
+            while (resultSet.next()) {
+                String id = resultSet.getString("id");
+                String name1 = resultSet.getString("name");
+                String work = resultSet.getString("work");
+                String date = resultSet.getString("date");
+                Worker employee = new Worker(name1, id, work, date);
+                employeesToMove.add(employee);
+            }
+
+            // Process employees to move
+            List<Worker> employeesToRemove = new ArrayList<>();
+            for (Worker emp : employeesToMove) {
+                int yearsOfWork = calculateYearsOfWork(emp.getDate());
+                if (yearsOfWork > 2) {
+                    moveWorker(emp, con);
+                    employeesToRemove.add(emp);
+                }
+            }
+
+            // Remove moved employees from UBworkers table
+            if (!employeesToRemove.isEmpty()) {
+            	removeWorkers(con, "Darkhanworkers", employeesToRemove);
+            }
+
+            resultSet.close();
+            statement.close();
+            con.close();
+        } catch (SQLException e) {
+            System.out.println("Connection failed!");
+            e.printStackTrace();
+        }
+    }
+
+    // Method to fetch workers from a specific table
+    public static List<Worker> fetchWorkers(Connection con, String tableName) throws SQLException {
+        List<Worker> workers = new ArrayList<>();
+        String query = "SELECT * FROM " + tableName;
+        try (PreparedStatement statement = con.prepareStatement(query);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                String id = resultSet.getString("id");
+                String name = resultSet.getString("name");
+                String work = resultSet.getString("work");
+                String date = resultSet.getString("date");
+                workers.add(new Worker(name, id, work, date));
+            }
+        }
+        return workers;
+    }
+
+   
+
+    // Method to move worker back to UBworkers table
+    public static void moveWorker(Worker worker, Connection con) throws SQLException {
+        String insertQuery = "INSERT INTO UBworkers (id, name, work, date) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement insertStatement = con.prepareStatement(insertQuery)) {
+            insertStatement.setString(1, worker.getId());
+            insertStatement.setString(2, worker.getName());
+            insertStatement.setString(3, worker.getWork());
+            insertStatement.setString(4, worker.getDate());
+            insertStatement.executeUpdate();
+        }
+    }
+
+    // Method to remove workers from a specific table
+    public static void removeWorkers(Connection con, String tableName, List<Worker> workersToRemove) throws SQLException {
+        String deleteQuery = "DELETE FROM " + tableName + " WHERE id = ?";
+        try (PreparedStatement deleteStatement = con.prepareStatement(deleteQuery)) {
+            for (Worker worker : workersToRemove) {
+                deleteStatement.setString(1, worker.getId());
+                deleteStatement.addBatch();
+            }
+            deleteStatement.executeBatch();
+        }
+    }
+
+    // Method to calculate years of work based on start date
+    public static int calculateYearsOfWork(String startDate) {
+        int startYear = Integer.parseInt(startDate.substring(0, 4));
+        int currentYear = java.time.Year.now().getValue();
+        return currentYear - startYear;
+    }
 }
